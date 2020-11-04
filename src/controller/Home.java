@@ -42,6 +42,9 @@ public class Home {
                 case 4:
                     borrarEmpleado(file);
                     break;
+                case 5:
+                    borrarEmpleadoSecuencial(file);
+                    break;
                 default:
                     System.out.println("¿Un saludo? Pues un saludo.");
             }
@@ -49,17 +52,45 @@ public class Home {
 
     }
 
+    private static void borrarEmpleadoSecuencial(File file) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("ID a borrar: ");
+        int respuesta = sc.nextInt();
+        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+            int id;
+            while (raf.getFilePointer() != raf.length()) {
+                id = raf.readInt();
+                if (id == respuesta) {
+                    raf.seek(raf.getFilePointer() - 4);
+                    raf.writeInt(-1);
+                } else {
+                    raf.skipBytes(52);
+                }
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private static void borrarEmpleado(File file) {
         Scanner sc = new Scanner(System.in);
         System.out.print("ID a borrar: ");
         int respuesta = sc.nextInt();
         try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
-            raf.seek((respuesta-1) * 56);
-            if ( raf.readInt() != -1 && raf.readInt()!=respuesta) {
+            if (raf.length() > (respuesta-1) * 56) {
+                raf.seek((respuesta - 1) * 56);
 
-                raf.writeInt(-1);
+                if (raf.readInt() != -1) {
+                    raf.seek(raf.getFilePointer() - 4);
+                    raf.writeInt(-1);
+                } else {
+                    System.out.println("Parece que ya ha sido dado de baja ese trabajador");
+
+                }
             } else {
-                System.out.println("Parece que ya ha sido dado de baja ese trabajador");
+                System.out.println("Ese ID no existe");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -71,15 +102,20 @@ public class Home {
         Scanner sc = new Scanner(System.in);
         System.out.print("ID: ");
         int id = sc.nextInt();
-        try (RandomAccessFile raf = new RandomAccessFile(file, "r")){
-            raf.seek((id-1)*56);
-            System.out.println(id);
-            byte[] b = new byte[40];
-            raf.readFully(b);
-            String name = new String(b);
-            System.out.println(name);
-            System.out.println(raf.readInt());
-            System.out.println(raf.readDouble());
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            raf.seek((id - 1) * 56);
+            if (raf.readInt() == -1) {
+                System.out.println("El usuario ha sido borrado");
+            } else {
+
+                System.out.println(id);
+                byte[] b = new byte[40];
+                raf.readFully(b);
+                String name = new String(b);
+                System.out.println(name);
+                System.out.println(raf.readInt());
+                System.out.println(raf.readDouble());
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -96,27 +132,28 @@ public class Home {
         trabajador.setNombre(sc.nextLine());
         System.out.print("Departamento: ");
         trabajador.setDepartamento(sc.nextInt());
+        sc.nextLine();
         System.out.println("Salario: ");
         trabajador.setSalario(sc.nextDouble());
+        sc.nextLine();
         try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
-            if (file.length() == 0) {
-                raf.seek(0);
-                raf.write(id);
+            if (raf.length() == 0) {
+                raf.writeInt(id);
                 StringBuilder buffer = new StringBuilder(trabajador.getNombre());
                 buffer.setLength(20);
                 raf.writeChars(buffer.toString());
-                raf.write(trabajador.getDepartamento());
+                raf.writeInt(trabajador.getDepartamento());
                 raf.writeDouble(trabajador.getSalario());
             } else {
                 System.out.println(raf.length());
-                raf.seek(raf.length() - 50);
-                id = (int) (raf.length()/56);
+                raf.seek(raf.length() - 56);
+                id = raf.readInt();
                 raf.seek(raf.length());
-                raf.write(id + 1);
+                raf.writeInt(id + 1);
                 StringBuilder buffer = new StringBuilder(trabajador.getNombre());
                 buffer.setLength(20);
                 raf.writeChars(buffer.toString());
-                raf.write(trabajador.getDepartamento());
+                raf.writeInt(trabajador.getDepartamento());
                 raf.writeDouble(trabajador.getSalario());
             }
         } catch (IOException e) {
@@ -125,16 +162,23 @@ public class Home {
     }
 
     public static void leerTrabajadores(File file) {
+        int id, departamento;
+        double salario;
+        String nombre;
         try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
-            raf.seek(0);
             while (raf.getFilePointer() != raf.length()) {
-                System.out.println(raf.readInt());
-                byte[] b = new byte[40];
-                raf.readFully(b);
-                String name = new String(b);
-                System.out.println(name);
-                System.out.println(raf.readInt());
-                System.out.println(raf.readDouble());
+                id = raf.readInt();
+                if (id == -1) {
+                    System.out.println("Este usuario ha sido dado de baja");
+                    raf.skipBytes(52);
+                } else {
+                    byte[] b = new byte[40];
+                    raf.readFully(b);
+                    nombre = new String(b);
+                    departamento = raf.readInt();
+                    salario = raf.readDouble();
+                    System.out.println(id + "\t" + nombre + "\t" + departamento + "\t" + salario);
+                }
 
             }
         } catch (IOException e) {

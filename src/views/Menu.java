@@ -8,5 +8,6 @@ public class Menu {
         System.out.println("2. Leer trabajadores");
         System.out.println("3. Buscar trabajador");
         System.out.println("4. Borrar empleado");
+        System.out.println("5. Borrar empleado físico");
     }
 }
