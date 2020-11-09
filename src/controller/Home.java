@@ -4,7 +4,6 @@ import models.Trabajador;
 import views.Menu;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Scanner;
@@ -45,11 +44,53 @@ public class Home {
                 case 5:
                     borrarEmpleadoSecuencial(file);
                     break;
+                case 6:
+                    System.out.print("ID del trabajador a modificar: ");
+                    int id = sc.nextInt();
+                    sc.nextLine();
+                    System.out.print("Escriba que campo quiere cambiar [nombre|departamento|salario]");
+                    String respuesta = sc.nextLine();
+                    System.out.print("Diga su nuevo valor: ");
+                    String valor = sc.nextLine();
+                    modificarTrabajador(id, respuesta, file, valor);
+                    break;
                 default:
                     System.out.println("¿Un saludo? Pues un saludo.");
             }
         } while (opcion != 0);
 
+    }
+
+    private static void modificarTrabajador(int id, String respuesta, File file, String valor) {
+        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+            if ((id - 1) * 56 > raf.length()) {
+                System.out.println("Ese usuario no existe");
+            } else {
+                if (raf.readInt() == id) {
+
+                    if (respuesta.equalsIgnoreCase("nombre")) {
+                        StringBuilder sb = new StringBuilder(valor);
+                        sb.setLength(20);
+                        raf.writeChars(sb.toString());
+                        System.out.println("Valor modificado");
+                    }
+                    if (respuesta.equalsIgnoreCase("departamento")) {
+                        raf.seek(raf.skipBytes(40));
+                        raf.writeInt(Integer.parseInt(valor));
+                        System.out.println("Valor modificado");
+                    }
+                    if (respuesta.equalsIgnoreCase("salario")) {
+                        raf.seek(raf.skipBytes(44));
+                        raf.writeDouble(Double.parseDouble(valor));
+                        System.out.println("Valor modificado");
+                    }
+                } else {
+                    raf.skipBytes(52);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void borrarEmpleadoSecuencial(File file) {
@@ -67,8 +108,6 @@ public class Home {
                     raf.skipBytes(52);
                 }
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -79,7 +118,7 @@ public class Home {
         System.out.print("ID a borrar: ");
         int respuesta = sc.nextInt();
         try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
-            if (raf.length() > (respuesta-1) * 56) {
+            if (raf.length() > (respuesta - 1) * 56) {
                 raf.seek((respuesta - 1) * 56);
 
                 if (raf.readInt() != -1) {
@@ -116,8 +155,6 @@ public class Home {
                 System.out.println(raf.readInt());
                 System.out.println(raf.readDouble());
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -138,27 +175,26 @@ public class Home {
         sc.nextLine();
         try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
             if (raf.length() == 0) {
-                raf.writeInt(id);
-                StringBuilder buffer = new StringBuilder(trabajador.getNombre());
-                buffer.setLength(20);
-                raf.writeChars(buffer.toString());
-                raf.writeInt(trabajador.getDepartamento());
-                raf.writeDouble(trabajador.getSalario());
+                escribe(trabajador, id, raf);
             } else {
                 System.out.println(raf.length());
                 raf.seek(raf.length() - 56);
                 id = raf.readInt();
                 raf.seek(raf.length());
-                raf.writeInt(id + 1);
-                StringBuilder buffer = new StringBuilder(trabajador.getNombre());
-                buffer.setLength(20);
-                raf.writeChars(buffer.toString());
-                raf.writeInt(trabajador.getDepartamento());
-                raf.writeDouble(trabajador.getSalario());
+                escribe(trabajador, id + 1, raf);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void escribe(Trabajador trabajador, int id, RandomAccessFile raf) throws IOException {
+        raf.writeInt(id);
+        StringBuilder buffer = new StringBuilder(trabajador.getNombre());
+        buffer.setLength(20);
+        raf.writeChars(buffer.toString());
+        raf.writeInt(trabajador.getDepartamento());
+        raf.writeDouble(trabajador.getSalario());
     }
 
     public static void leerTrabajadores(File file) {
