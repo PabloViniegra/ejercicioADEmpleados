@@ -4,7 +4,6 @@ import models.Trabajador;
 import views.Menu;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -68,43 +67,47 @@ public class Home {
 
     private static void borradoFisico(File file) {
         ArrayList<Trabajador> trabajadores = new ArrayList<>();
-        Trabajador trabajador = null;
-        StringBuilder sb = null;
+        Trabajador trabajador;
         try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
             while (raf.getFilePointer() != raf.length()) {
-                long length = raf.length();
                 int id = raf.readInt();
                 if (id == -1) {
                     raf.skipBytes(52);
                 } else {
-                    trabajador= new Trabajador();
-                    trabajador.setId(trabajadores.size()+1);
-                    byte[] b = new byte[40];
-                    raf.readFully(b);
-                    String name = new String(b);
-                    trabajador.setNombre(name);
-                    trabajador.setDepartamento(raf.readInt());
-                    trabajador.setSalario(raf.readDouble());
-                    trabajadores.add(trabajador);
-
+                    trabajador = new Trabajador();
+                    escribiendoTrabajadorMientrasBorro(trabajadores, trabajador, raf);
 
                 }
             }
             raf.seek(0);
-            for (Trabajador trabajadore : trabajadores) {
-                raf.writeInt(trabajadore.getId());
-                sb = new StringBuilder(trabajadore.getNombre());
-                sb.setLength(20);
-                raf.writeChars(sb.toString());
-                raf.writeInt(trabajadore.getDepartamento());
-                raf.writeDouble(trabajadore.getSalario());
-            }
-            raf.setLength(trabajadores.size()*56);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            leerConBorrado(trabajadores, raf);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void escribiendoTrabajadorMientrasBorro(ArrayList<Trabajador> trabajadores, Trabajador trabajador, RandomAccessFile raf) throws IOException {
+        trabajador.setId(trabajadores.size() + 1);
+        byte[] b = new byte[40];
+        raf.readFully(b);
+        String name = new String(b);
+        trabajador.setNombre(name);
+        trabajador.setDepartamento(raf.readInt());
+        trabajador.setSalario(raf.readDouble());
+        trabajadores.add(trabajador);
+    }
+
+    private static void leerConBorrado(ArrayList<Trabajador> trabajadores, RandomAccessFile raf) throws IOException {
+        StringBuilder sb;
+        for (Trabajador trabajadore : trabajadores) {
+            raf.writeInt(trabajadore.getId());
+            sb = new StringBuilder(trabajadore.getNombre());
+            sb.setLength(20);
+            raf.writeChars(sb.toString());
+            raf.writeInt(trabajadore.getDepartamento());
+            raf.writeDouble(trabajadore.getSalario());
+        }
+        raf.setLength(trabajadores.size() * 56);
     }
 
     private static void modificarTrabajador(int id, String respuesta, File file, String valor) {
