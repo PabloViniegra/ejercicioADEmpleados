@@ -4,8 +4,10 @@ import models.Trabajador;
 import views.Menu;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Home {
@@ -54,11 +56,55 @@ public class Home {
                     String valor = sc.nextLine();
                     modificarTrabajador(id, respuesta, file, valor);
                     break;
+                case 7:
+                    borradoFisico(file);
+                    break;
                 default:
                     System.out.println("¿Un saludo? Pues un saludo.");
             }
         } while (opcion != 0);
 
+    }
+
+    private static void borradoFisico(File file) {
+        ArrayList<Trabajador> trabajadores = new ArrayList<>();
+        Trabajador trabajador = null;
+        StringBuilder sb = null;
+        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+            while (raf.getFilePointer() != raf.length()) {
+                long length = raf.length();
+                int id = raf.readInt();
+                if (id == -1) {
+                    raf.skipBytes(52);
+                } else {
+                    trabajador= new Trabajador();
+                    trabajador.setId(trabajadores.size()+1);
+                    byte[] b = new byte[40];
+                    raf.readFully(b);
+                    String name = new String(b);
+                    trabajador.setNombre(name);
+                    trabajador.setDepartamento(raf.readInt());
+                    trabajador.setSalario(raf.readDouble());
+                    trabajadores.add(trabajador);
+
+
+                }
+            }
+            raf.seek(0);
+            for (Trabajador trabajadore : trabajadores) {
+                raf.writeInt(trabajadore.getId());
+                sb = new StringBuilder(trabajadore.getNombre());
+                sb.setLength(20);
+                raf.writeChars(sb.toString());
+                raf.writeInt(trabajadore.getDepartamento());
+                raf.writeDouble(trabajadore.getSalario());
+            }
+            raf.setLength(trabajadores.size()*56);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void modificarTrabajador(int id, String respuesta, File file, String valor) {
