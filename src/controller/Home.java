@@ -4,9 +4,11 @@ import models.Trabajador;
 import views.Menu;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Scanner;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Home {
 
@@ -54,11 +56,125 @@ public class Home {
                     String valor = sc.nextLine();
                     modificarTrabajador(id, respuesta, file, valor);
                     break;
+                case 7:
+                    mostrarEmpleadoQueMasGana(file);
+                    break;
+                case 8:
+                    mostrarDepartamentoConMasEmpleados(file);
+                    break;
+                case 9:
+                    mostrarDepartamentosConMayorGasto(file);
+                    break;
                 default:
                     System.out.println("¿Un saludo? Pues un saludo.");
             }
         } while (opcion != 0);
 
+    }
+
+    private static void mostrarDepartamentosConMayorGasto(File file) {
+        Trabajador trabajador;
+        int id;
+        ArrayList<Trabajador> trabajadores = new ArrayList<>();
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            while (raf.getFilePointer() != raf.length()) {
+                id = raf.readInt();
+                if (id != -1) {
+                    trabajador = new Trabajador();
+                    byte[] by = new byte[40];
+                    raf.readFully(by);
+                    trabajador.setNombre(new String(by));
+                    trabajador.setDepartamento(raf.readInt());
+                    trabajador.setSalario(raf.readDouble());
+                    trabajadores.add(trabajador);
+                } else {
+                    raf.skipBytes(52);
+                }
+            }
+            Map<Integer, Double> map = trabajadores.stream().
+                    collect(Collectors.groupingBy(Trabajador::getDepartamento, Collectors.summingDouble(Trabajador::getSalario)));
+            System.out.println("El departamento que más se gasta es el " + map.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null).getKey() + " y con el sueldo de " + map.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null).getValue());
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void mostrarDepartamentoConMasEmpleados(File file) {
+        Trabajador trabajador;
+        int id;
+        ArrayList<Trabajador> trabajadores = new ArrayList<>();
+        byte[] b;
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            while (raf.getFilePointer() != raf.length()) {
+                id = raf.readInt();
+                if (id != -1) {
+                    trabajador = new Trabajador();
+                    byte[] by = new byte[40];
+                    raf.readFully(by);
+                    trabajador.setNombre(new String(by));
+                    trabajador.setDepartamento(raf.readInt());
+                    trabajador.setSalario(raf.readDouble());
+                    trabajadores.add(trabajador);
+                } else {
+                    raf.skipBytes(52);
+                }
+            }
+            trabajadores.sort(new Comparator<Trabajador>() {
+                @Override
+                public int compare(Trabajador o1, Trabajador o2) {
+                    if (o1.getDepartamento() > o2.getDepartamento())
+                        return 1;
+                    else if (o2.getDepartamento() > o1.getDepartamento())
+                        return -1;
+                    else
+                        return 0;
+                }
+            });
+            Map<Integer, Long> map = trabajadores.stream().
+                    collect(Collectors.groupingBy(Trabajador::getDepartamento, Collectors.counting()));
+
+            System.out.println("El departamento con más trabajadores es " + Objects.requireNonNull(map.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null)).getKey());
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private static void mostrarEmpleadoQueMasGana(File file) {
+        double actualSalary = 0;
+        int id;
+        int idMost = 0;
+        double salary;
+        byte[] b;
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            while (raf.getFilePointer() != raf.length()) {
+
+                id = raf.readInt();
+                if (id != -1) {
+                    b = new byte[40];
+                    raf.readFully(b);
+                    raf.readInt();
+                    salary = raf.readDouble();
+                    if (salary > actualSalary) {
+                        idMost = id;
+                        actualSalary = salary;
+                    }
+                } else {
+                    raf.skipBytes(52);
+                }
+            }
+            System.out.println("El trabajador " + idMost + " es el que más gana.");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void modificarTrabajador(int id, String respuesta, File file, String valor) {
