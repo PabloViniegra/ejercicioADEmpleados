@@ -65,11 +65,85 @@ public class Home {
                 case 9:
                     mostrarDepartamentosConMayorGasto(file);
                     break;
+                case 10:
+                    departamentosConMásEmpleadosConHashMap(file);
+                    break;
+                case 11:
+                    departamentosConMásCostesConHashMap(file);
+                    break;
                 default:
                     System.out.println("¿Un saludo? Pues un saludo.");
             }
         } while (opcion != 0);
 
+    }
+
+    private static void departamentosConMásEmpleadosConHashMap(File file) {
+        Map<Integer, Integer> myMap = new HashMap<>();
+        Trabajador trabajador;
+        int contador = 0;
+        int id = 0;
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            while (raf.getFilePointer() != raf.length()) {
+                id = raf.readInt();
+                if (id != -1) {
+                    trabajador = new Trabajador();
+                    byte[] by = new byte[40];
+                    raf.readFully(by);
+                    trabajador.setNombre(new String(by));
+                    trabajador.setDepartamento(raf.readInt());
+                    trabajador.setSalario(raf.readDouble());
+                    if (myMap.containsKey(trabajador.getDepartamento())) {
+                        myMap.put(trabajador.getDepartamento(), myMap.get(trabajador.getDepartamento())+1);
+                    } else {
+                        myMap.put(trabajador.getDepartamento(), 1);
+                    }
+
+                } else {
+                    raf.skipBytes(52);
+                }
+            }
+            System.out.println("El Departamento con más currelas es " + myMap.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null).getKey());
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void departamentosConMásCostesConHashMap(File file) {
+        Map<Integer, Double> mySalaries = new HashMap<>();
+        Trabajador trabajador;
+        int contador = 0;
+        int id = 0;
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            while (raf.getFilePointer() != raf.length()) {
+                id = raf.readInt();
+                if (id != -1) {
+                    trabajador = new Trabajador();
+                    byte[] by = new byte[40];
+                    raf.readFully(by);
+                    trabajador.setNombre(new String(by));
+                    trabajador.setDepartamento(raf.readInt());
+                    trabajador.setSalario(raf.readDouble());
+                    if (mySalaries.containsKey(trabajador.getDepartamento())) {
+                        mySalaries.put(trabajador.getDepartamento(), mySalaries.get(trabajador.getDepartamento()) + trabajador.getSalario());
+                    } else {
+                        mySalaries.put(trabajador.getDepartamento(), trabajador.getSalario());
+                    }
+
+                } else {
+                    raf.skipBytes(52);
+                }
+            }
+            System.out.println("El Departamento con más costes es el " + mySalaries.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null).getKey());
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void mostrarDepartamentosConMayorGasto(File file) {
@@ -93,7 +167,11 @@ public class Home {
             }
             Map<Integer, Double> map = trabajadores.stream().
                     collect(Collectors.groupingBy(Trabajador::getDepartamento, Collectors.summingDouble(Trabajador::getSalario)));
-            System.out.println("El departamento que más se gasta es el " + map.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null).getKey() + " y con el sueldo de " + map.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null).getValue());
+            System.out.println("El departamento que más se gasta es el " + map.entrySet().
+                    stream().
+                    max(Map.Entry.comparingByValue()).
+                    orElse(null).
+                    getKey() + " y con el sueldo de " + map.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null).getValue());
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();

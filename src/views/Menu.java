@@ -13,5 +13,7 @@ public class Menu {
         System.out.println("7. Mostrar empleado que más gana");
         System.out.println("8. Mostrar departamento con más empleados");
         System.out.println("9. Mostrar departamentos que más gasta en salarios");
+        System.out.println("10. Departamentos con más empleados con HashMap");
+        System.out.println("11. Departamentos con más costes con HashMap");
     }
 }
